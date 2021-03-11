@@ -1,0 +1,148 @@
+---
+title: "Bishop USD TUPE Tracking Dashboard"
+output: 
+  flexdashboard::flex_dashboard:
+    theme: cerulean
+    orientation: rows
+    vertical_layout: fill
+    source_code: embed
+
+---
+
+```{r Data Management, echo=FALSE}
+#Working Directory and Packages
+setwd("~/Desktop/UCSD/TUPE/Evaluation/Dashboard/TUPEDashboards/GranteeDashboards/Bishop.DashboardWebsite")
+
+library(flexdashboard)
+library(knitr)
+library(DT)
+library(rpivotTable)
+library(ggplot2)
+library(plotly)
+library(plyr)
+library(dplyr)
+library(readxl)
+library(tidyverse)
+library(crosstalk)
+library(leaflet)
+library(htmltools)
+library(rgdal)
+library(scatterD3)
+library(scales)
+library(formattable)
+
+#Read Excel
+Bishop_TrackingData <- read_excel("~/Desktop/UCSD/TUPE/Evaluation/Dashboard/TUPEDashboards/GranteeDashboards/BishopData/Bishop.TrackingData.xlsx")
+
+# RecodeVariables
+Bishop_TrackingData$SchoolSite       <- as.factor(Bishop_TrackingData$SchoolSite)
+Bishop_TrackingData$ClassSection     <- as.factor(Bishop_TrackingData$ClassSection)
+Bishop_TrackingData$ActivityName     <- as.factor(Bishop_TrackingData$ActivityName)
+Bishop_TrackingData$TargetPopulation <- as.character(Bishop_TrackingData$TargetPopulation)
+Bishop_TrackingData$Session          <- as.numeric(Bishop_TrackingData$Session)
+Bishop_TrackingData$Engagement       <- revalue(Bishop_TrackingData$Engagement,
+                                      c("Low"   = "1", 
+                                        "Medium"= "2",
+                                        "High"  = "3"))
+Bishop_TrackingData$Engagement       <- as.numeric(Bishop_TrackingData$Engagement)
+
+
+
+##Round Variables
+Bishop_TrackingData$AbsoluteReach        <- round(Bishop_TrackingData$AbsoluteReach , digits = 1)
+Bishop_TrackingData$Engagement           <- round(Bishop_TrackingData$Engagement, digits = 1)
+Bishop_TrackingData$Satisfaction_Jul.Dec.         <- round(Bishop_TrackingData$Satisfaction_Jul.Dec., digits = 1)
+Bishop_TrackingData$UnduplicatedReach    <- round(Bishop_TrackingData$UnduplicatedReach, digits = 1)
+
+```
+
+# July-Dec. 2020
+
+## row {data-height="100"}
+
+### TUPE Activities
+
+```{r Activities}
+Activities <- Bishop_TrackingData %>% 
+              group_by(ClassSection) %>% 
+              summarize(CountAct = length(unique(ClassSection)))
+
+valueBox(length(Activities$ClassSection),
+         icon    = 'fa-briefcase',
+         color   = "#60E62E")
+
+```
+
+### Unduplicated Reach
+
+```{r Reach}
+U.Reach <- sum(Bishop_TrackingData$UnduplicatedReach,
+               na.rm = TRUE)
+U.Reach <- round(U.Reach,
+                 digits = 1)
+
+valueBox(U.Reach, 
+         icon    = 'fa-school',
+         color   = "orange")
+```
+
+### Average Student Engagement
+
+```{r Engagement}
+Engagement <- mean(Bishop_TrackingData$Engagement, na.rm = TRUE)
+
+Engagement <- round((Engagement),
+                     digits = 2)
+
+gauge(Engagement,
+  sectors = gaugeSectors(
+            success = c(2,3),
+            warning = c(1,1.9),
+            danger = c(0,1),
+            colors = c("purple", 
+                       "blue", 
+                       "red")),
+  min = 0,
+  max = 3)
+```
+
+### Average Dose
+
+```{r Dose}
+Dose <- mean(Bishop_TrackingData$Dose, na.rm = TRUE)
+
+Dose <- round((Dose),
+                     digits = 2)
+
+gauge(Dose,
+  sectors = gaugeSectors(
+            success = c(45,60),
+            warning = c(20,44.9),
+            danger = c(0,19.9),
+            colors = c("gold", 
+                       "blue", 
+                       "red")),
+  min = 0,
+  max = 60)
+
+    
+```
+
+## row {.tabset}
+
+### Summary 
+
+```{r Pivot Table}
+rpivotTable(Bishop_TrackingData,
+            rows = c("ActivityName"),
+            cols = "TargetPopulation",
+            rendererName = "Stacked Bar Chart"
+            )
+
+```
+
+
+
+
+
+
